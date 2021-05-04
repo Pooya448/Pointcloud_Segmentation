@@ -3,9 +3,9 @@ import open3d as o3d
 import os
 import glob
 import random
-from scipy.spatial import distance
 from scipy.special import softmax
 from sklearn.metrics import f1_score
+from sklearn.neighbors import NearestNeighbors
 
 def generate_palette(n):
     if n > 7:
@@ -57,20 +57,16 @@ def setup():
 
     probs = np.array(probs).astype(np.float32)
     labels = np.array(labels).astype(np.int8)
-    points = np.array(points)
+    points = np.array(points).astype(np.float32)
 
     return points, probs, labels
 
-def KNN(points, k):
-    print(f"KNN -> K = {k}")
-    D = distance.squareform(distance.pdist(points))
-    closest = np.argsort(D, axis=1)
-    knn = closest[:, 1:k + 1]
-
-    assert knn.shape[0] == 10000
-    assert knn.shape[1] == k
-
-    return knn
+def KNN(points, K):
+    neighbors = NearestNeighbors(n_neighbors=K+1, algorithm='ball_tree').fit(points)
+    distances, indices = neighbors.kneighbors(points)
+    adjacency_matrix = neighbors.kneighbors_graph(points).toarray()
+    print(f"KNN -> K = {K}")
+    return indices[:, 1:]
 
 def contains_boundary(inferred, vs):
     for v in vs:
